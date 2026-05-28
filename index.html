@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Seated · Cold Call Hub v2</title>
-<script src="data.js?v=2"></script>
+<script src="data.js"></script>
 <style>
   :root {
     --blue:#185FA5; --blue-lt:#EBF4FF; --blue-mid:#378ADD;
@@ -116,6 +116,10 @@
   .script-label.opener-line { border-left:3px solid var(--blue-mid); }
   .script-label.opener-cell { border-left:3px solid #7B9ED9; }
   .script-text { padding:10px 12px; font-size:13px; color:var(--script-text); line-height:1.7; white-space:pre-line; }
+  .dir { color:#C0392B; font-style:italic; font-weight:normal; }
+  .script-notice { background:#FFF3F3; border:1px solid #FBBCBC; border-radius:6px; padding:7px 12px; font-size:11px; font-weight:700; color:#C0392B; letter-spacing:0.06em; margin:8px 8px 0; }
+  .disc-closing { background:#E8F0FB; border-left:3px solid var(--blue); padding:8px 12px; font-size:12px; color:var(--blue); font-weight:600; margin-top:4px; }
+  .disc-closing-body { padding:8px 12px; font-size:12px; color:#555; line-height:1.6; white-space:pre-line; }
   .nd-tag        { display:inline; background:#B5D4F4; color:#0C447C; padding:1px 5px; border-radius:3px; font-weight:600; font-size:12px; }
   .nd-tag-bilt   { background:#CECBF6; color:#26215C; }
   .nd-tag-dinova { background:#9FE1CB; color:#085041; }
@@ -342,9 +346,12 @@ function render() {
     : dinovaNames.length === 2 ? dinovaNames[0] + ' and ' + dinovaNames[1]
     : dinovaNames[0] + ', ' + dinovaNames[1] + ', and ' + dinovaNames[2];
 
+  var scriptNotice = '<div class="script-notice">⚑ RED TEXT = DIRECTIONS — DO NOT READ ALOUD</div>';
+
   // Shared script blocks
-  var quantify  = "We're Seated — a restaurant discovery program partnered with the largest credit card rewards platforms in the country. We power dining for millions of members nationally, work with about 3,000 restaurants, and we've been doing this for 10 years.";
-  var localize  = "In " + nbhd + ", we work with " + (p1n || 'a similar restaurant') + " and " + (p2n || 'another local partner') + " — and we're actively expanding here right now. The reason restaurants like " + p1n + " partner with us is that we're exceptionally good at driving diners during off-peak times, so their Mondays and Wednesdays start looking more like their Thursdays and Fridays.";
+  var isNYC = (p.market || '').toLowerCase().indexOf('new york') >= 0;
+  var quantify = "We're Seated — a restaurant discovery program partnered with the largest credit card rewards platforms in the country. We power dining for millions of members nationally, work with about " + (isNYC ? "3K restaurants — we're actually based in NYC" : "3,000 restaurants") + ", and we've been doing this for 10 years.";
+  var localize  = "In " + nbhd + ", we work with " + (p1n || 'a similar restaurant') + " and " + (p2n || 'another local partner') + " — and we're actively expanding here right now. The reason restaurants like " + p1n + " partner with us is that we're exceptionally good at consistently filling tables — covers they couldn't fill on their own.";
   var personalize = "I came across " + p.name + " — " + accolStr + ". " + biltSafe + " And we're connected to " + dinPhrase + " through our corporate dining program. You'd be a really strong fit for our diner base.";
   var sharedClose = "I actually have some time tomorrow at 3 PM — does that work for you?\n\nIf they ask about pricing: 'That's exactly what I want to walk you through — it's easier to show than explain. No set-up costs, not a subscription. Does [time] work?'";
   var rl_lock = "Perfect — I'll send a calendar invite right now. What's the best email?\n\n'Just sent it — if anything comes up, shoot me a text. My number's in the invite.'\n\n'Oh — real quick, what POS system do you use? Just want to confirm compatibility.'";
@@ -352,10 +359,10 @@ function render() {
 
   // RESTAURANT LINE
   var rl_opener = "Hi — I'm calling to extend an invitation to join the Seated network. Could you point me to whoever handles partnerships for " + p.name + "?";
-  var rl_gatekeeper = "[They say they don't do partnerships / 'we don't do that']\n\n'Got it — magic words: this isn't a traditional advertising pitch, there's no upfront cost and it's not a subscription. I just want to make sure I'm talking to the right person — who would handle something like adding a new revenue channel or a new customer program? Is that the owner?'\n\n[Can't transfer / owner unavailable]\nGet a name, direct number, and best callback time. Don't schedule with someone who can't approve.\n\n'What's their name? And is there a better number to reach them directly — a cell or direct line?'";
-  var rl_qualify = "[Once you have the DM]\n'Great — and just so I make sure I'm talking to the right person, what's your role at " + p.name + "?'\n\n[Owner / final DM] → 'Perfect, you're exactly who I wanted to talk to.' → Go to Quantify.\n[GM / Manager] → 'Got it — for something like adding a new partnership, is that something you can approve, or would the owner need to be looped in?'\n  [Can approve] → 'Perfect, you're my person.' → Quantify.\n  [Needs owner] → 'I don't want to make you explain this twice — is the owner available now, or what's the best way to get them on with us?'";
+  var rl_gatekeeper = "<span class=\"dir\">[They say they don't do partnerships / 'we don't do that']</span>\n\n'Got it — this isn't a traditional advertising pitch, there's no upfront cost and it's not a subscription. I just want to make sure I'm talking to the right person — who would handle something like adding a new revenue channel or a new customer program? Is that the owner?'\n\n<span class=\"dir\">[Can't transfer / owner unavailable — get their name, a direct number, and best callback time. Only schedule with someone who can approve.]</span>\n\n'What's their name? And is there a better number to reach them directly — a cell or direct line?'";
+  var rl_qualify = "<span class=\"dir\">[Once you have the DM]</span>\n'Great — and just so I make sure I'm talking to the right person, what's your role at " + p.name + "?'\n\n<span class=\"dir\">[Owner / final DM] → Skip to Quantify.</span>\n<span class=\"dir\">[GM / Manager]</span>\n'Got it — for something like adding a new partnership, is that something you can approve, or would the owner need to be looped in?'\n<span class=\"dir\">[Can approve] → Proceed to Quantify.</span>\n<span class=\"dir\">[Needs owner]</span>\n'I don't want to make you explain this twice — is the owner available now, or what's the best way to get them on with us?'";
 
-  var rlContent = ''
+  var rlContent = scriptNotice
     + scriptRow('OPENER', rl_opener, 'opener-line')
     + scriptRow('GATEKEEPER', rl_gatekeeper, 'opener-line')
     + scriptRow('QUALIFY DM', rl_qualify, 'opener-line')
@@ -366,11 +373,12 @@ function render() {
     + scriptRow('LOCK', rl_lock);
 
   // DM CELL
-  var dm_opener = "Hey — is this the owner over at " + p.name + "?\n\n[Yes, who's this?] → 'Hey, this is [Your Name] from Seated — are you familiar with us?'\n\n[Not familiar] → Go into Quantify below.\n[Familiar] → 'Great — we're expanding in your area right now and I wanted to reach out about " + p.name + " specifically. I have time tomorrow at 3 — does that work?'";
+  var dm_opener = "Hey [Owner Name] — it's [Your Name] over at Seated. I'm not going to keep you long — I wanted to connect about " + p.name + " specifically because " + accolStr + " stood out. Are you familiar with Seated?";
+  var dm_quantify = "<span class=\"dir\">[Not Familiar]</span>\n" + quantify + "\n\n<span class=\"dir\">[Familiar]</span>\nGot it — so you probably know that we're a restaurant discovery program. We're partnered with the largest credit card rewards platforms in the country, we power dining for millions of members nationally, work with about 3,000 restaurants, and we've been doing this for 10 years.";
 
-  var dmContent = ''
+  var dmContent = scriptNotice
     + scriptRow('OPENER', dm_opener, 'opener-cell')
-    + scriptRow('QUANTIFY', quantify)
+    + scriptRow('QUANTIFY', dm_quantify)
     + scriptRow('LOCALIZE', localize, '', [p1n, p2n])
     + scriptRow('PERSONALIZE', personalize, '', [], biltNames, dinovaNames)
     + scriptRow('CLOSE', sharedClose)
@@ -378,21 +386,23 @@ function render() {
 
   // DISCOVERY
   var discContent = ''
-    + discRow('<b>What days or dayparts are typically slower for you — lunch or dinner, or certain nights of the week?</b>', 'Listen for: Mon–Wed dinner, Sunday lunch, early weeknight slots. Anchors which daypart to pitch around.')
-    + discRow("<b>Are you doing anything right now to drive covers during those slower times — OpenTable promotions, social, anything like that?</b>", "Listen for: gaps in their strategy. If nothing, that's your opening. If a competitor, that's a comparison opportunity.")
-    + discRow("<b>Who's your typical guest — neighborhood regulars, destination diners, corporate lunch?</b>", 'Listen for: alignment with BILT residents (young professional, nearby) or Dinova (corporate expense account). Use in your close.')
+    + discRow('<b>What does a typical week look like for you in terms of covers — are there nights you\'re looking to drive more traffic?</b>', 'Listen for patterns in the book. Understand where the gaps are so you can frame the pitch around real need.')
+    + discRow("<b>Are you doing anything right now to drive covers — OpenTable promotions, social, anything like that?</b>", "Listen for: gaps in their strategy. If nothing, that's your opening. If a competitor, that's a comparison opportunity.")
+    + discRow("<b>Who's your typical guest — neighborhood regulars, destination diners, corporate accounts?</b>", 'Listen for: alignment with BILT residents (young professional, nearby) or Dinova (corporate expense account). Use in your close.')
     + discRow("<b>Just so I make sure I'm talking to the right person — what does the process look like for adding a new partnership? Is that something you can approve, or would the owner need to be looped in?</b>", 'Only ask if unsure you have the DM. Get to the owner if needed.')
-    + discRow('<b>What POS system do you use? Just want to confirm compatibility before we hop on.</b>', 'Ask when locking the meeting. Confirms intent and surfaces any ops objection early.');
+    + discRow('<b>What POS system do you use? Just want to confirm compatibility before we hop on.</b>', 'Ask when locking the meeting. Confirms intent and surfaces any ops objection early.')
+    + '<div class="disc-closing">CLOSING — Confirm it\'s a priority before you hang up</div>'
+    + '<div class="disc-closing-body">\'Based on everything you\'ve shared — this sounds like a strong fit. I want to make sure I\'m not wasting your time: is bringing in more guests something you\'re actively focused on right now?\'\n\n<span class="dir">[Yes / it\'s a priority] → Move straight to closing the meeting.</span>\n<span class="dir">[Back-burner / not right now] → \'Got it — when does that change? I\'ll follow up then. What\'s the best way to reach you?\'</span></div>';
 
   // OBJECTIONS
   var objContent = ''
-    + objRow('"What's Seated?"', '<b>Say:</b> "We're a restaurant discovery program — partnered with the biggest credit card rewards platforms in the country, think Bilt, Bank of America, and similar. We connect their members — millions of high-intent diners — to restaurants like yours, specifically to fill the slower dayparts. No upfront cost, no subscription. We only make money when we drive you revenue. That's the 30-second version — it's honestly easier to show than explain. That's why I want to grab 20 minutes."')
-    + objRow('"Send me an email"', '<b>Say:</b> "Totally — before I do, I just want to make sure this is a good fit. Are you focused on getting more people through the door during the week?<br><br>[Once they engage] → I actually have a slot open tomorrow at 2 PM. Does that work? I'll keep it to 20 minutes."')
-    + objRow('"Not interested"', '<b>Say:</b> "'Not interested?' [mirror — pause]<br><br>'When you say that, is it a cost thing, or just don't want another platform?'<br><br>[If cost] → No upfront fees, nothing like that.<br>[If ops] → Zero extra work for your staff — ' + (p1n || 'our partner restaurants') + ' run it with no operational changes."')
+    + objRow('"What\'s Seated?"', '<b>Say:</b> "We\'re a restaurant discovery program — partnered with the biggest credit card rewards platforms in the country, think Bilt, Bank of America, and similar. We connect their members — millions of high-intent diners — directly to restaurants like yours. No upfront cost, no subscription. We only make money when we drive you revenue. That\'s the 30-second version — it\'s honestly easier to show than explain. That\'s why I want to grab 20 minutes."')
+    + objRow('"Send me an email"', '<b>Say:</b> "Totally — before I do, I just want to make sure this is a good fit. Are you focused on getting more people through the door during the week?<br><br>[Once they engage] → I actually have a slot open tomorrow at 2 PM. Does that work? I\'ll keep it to 20 minutes."')
+    + objRow('"Not interested"', '<b>Say:</b> "\'Not interested?\' [mirror — pause]<br><br>\'When you say that, is it a cost thing, or just don\'t want another platform?\'<br><br>[If cost] → No upfront fees, nothing like that.<br>[If ops] → Zero extra work for your staff — ' + (p1n || 'our partner restaurants') + ' run it with no operational changes."')
     + objRow('"What does it cost?"', '<b>Say:</b> "The price is entirely up to you — depends on how much you want to lean into filling empty seats. Makes a lot more sense when I can show you. Does [time] work?<br><br><b>Do NOT quote percentages. Do NOT explain occupancy pricing. Get the meeting.</b>"')
-    + objRow('"We've used Seated before"', '<b>Say:</b> "Yeah, I actually see that — we've made some big changes since then. We added luxury building and corporate partnerships and significantly increased our volume. Are you open to hearing what's different? I have time tomorrow — does that work?"')
-    + objRow('"We're too busy"', '<b>Say:</b> "That's a great problem to have — and when things slow down, you'll want something already in place. We work around your schedule. What do your slower days look like right now?"')
-    + objRow('"What is BILT?"', '<b>Say:</b> "It's a credit card rewards program built into leases at premium apartment buildings nearby — residents earn points paying rent and redeem them at restaurants close to where they live. ' + biltSafe + ' Worth 20 minutes?"');
+    + objRow('"We\'ve used Seated before"', '<b>Say:</b> "Yeah, I actually see that — we\'ve made some big changes since then. We added luxury building and corporate partnerships and significantly increased our volume. Are you open to hearing what\'s different? I have time tomorrow — does that work?"')
+    + objRow('"We\'re too busy"', '<b>Say:</b> "That\'s a great problem to have — and when things slow down, you\'ll want something already in place. We work around your schedule. What does your calendar look like in the next couple weeks?"')
+    + objRow('"What is BILT?"', '<b>Say:</b> "It\'s a credit card rewards program built into leases at premium apartment buildings nearby — residents earn points paying rent and redeem them at restaurants close to where they live. ' + biltSafe + ' Worth 20 minutes?"');
 
   // BUILD LEFT COLUMN
   var ndCount = [p.partners.filter(function(x){return x&&x.name;}).length,
@@ -409,6 +419,7 @@ function render() {
     + (p.market  ? '<span class="chip chip-market">' + p.market + '</span>' : '')
     + (p.accolades ? '<span class="chip chip-acc">⭐ ' + p.accolades + '</span>' : '')
     + '</div></div>'
+    + infoRow('Phone', p.phone || '')
     + infoRow('Address', p.address)
     + infoRow('Neighborhood', p.neighborhood)
     + infoRow('Zip', p.zip)
@@ -432,9 +443,9 @@ function render() {
     + '<div class="card" style="margin-top:12px">'
     + '<div class="card-header">Namedroppers</div>'
     + '<div class="nd-tabs">'
-    + '<div class="nd-tab ' + (activeNDTab==='partner'?'active-partner':'') + '" onclick="setNDTab('partner')">Partners (' + ndCount[0] + ')</div>'
-    + '<div class="nd-tab ' + (activeNDTab==='bilt'?'active-bilt':'') + '" onclick="setNDTab('bilt')">BILT (' + ndCount[1] + ')</div>'
-    + '<div class="nd-tab ' + (activeNDTab==='dinova'?'active-dinova':'') + '" onclick="setNDTab('dinova')">Dinova (' + ndCount[2] + ')</div>'
+    + '<div class="nd-tab ' + (activeNDTab==='partner'?'active-partner':'') + '" onclick="setNDTab(\'partner\')">Partners (' + ndCount[0] + ')</div>'
+    + '<div class="nd-tab ' + (activeNDTab==='bilt'?'active-bilt':'') + '" onclick="setNDTab(\'bilt\')">BILT (' + ndCount[1] + ')</div>'
+    + '<div class="nd-tab ' + (activeNDTab==='dinova'?'active-dinova':'') + '" onclick="setNDTab(\'dinova\')">Dinova (' + ndCount[2] + ')</div>'
     + '</div>'
     + '<div class="nd-items" id="nd-items">' + renderNDTab(p) + '</div>'
     + '</div>';
@@ -442,10 +453,10 @@ function render() {
   // BUILD RIGHT COLUMN
   var rightCol = '<div class="card">'
     + '<div class="panel-tabs" style="flex-wrap:wrap">'
-    + '<div class="panel-tab ' + (activePanelTab==='rl'?'active':'') + '" onclick="setPanelTab('rl')">📞 Restaurant Line</div>'
-    + '<div class="panel-tab ' + (activePanelTab==='dm'?'active':'') + '" onclick="setPanelTab('dm')">📱 DM Cell</div>'
-    + '<div class="panel-tab ' + (activePanelTab==='discovery'?'active':'') + '" onclick="setPanelTab('discovery')">🔍 Discovery</div>'
-    + '<div class="panel-tab ' + (activePanelTab==='objections'?'active':'') + '" onclick="setPanelTab('objections')">🛡 Objections</div>'
+    + '<div class="panel-tab ' + (activePanelTab==='rl'?'active':'') + '" onclick="setPanelTab(\'rl\')">📞 Restaurant Line</div>'
+    + '<div class="panel-tab ' + (activePanelTab==='dm'?'active':'') + '" onclick="setPanelTab(\'dm\')">📱 DM Cell</div>'
+    + '<div class="panel-tab ' + (activePanelTab==='discovery'?'active':'') + '" onclick="setPanelTab(\'discovery\')">🔍 Discovery</div>'
+    + '<div class="panel-tab ' + (activePanelTab==='objections'?'active':'') + '" onclick="setPanelTab(\'objections\')">🛡 Objections</div>'
     + '</div>'
     + '<div class="panel-content ' + (activePanelTab==='rl'?'active':'') + '" id="panel-rl">' + rlContent + '</div>'
     + '<div class="panel-content ' + (activePanelTab==='dm'?'active':'') + '" id="panel-dm">' + dmContent + '</div>'
