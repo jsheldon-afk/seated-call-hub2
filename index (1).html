@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seated · Cold Call Hub v2</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root {
+    --blue:#185FA5; --blue-lt:#EBF4FF; --blue-mid:#378ADD;
+    --green:#0F6E56; --green-lt:#E1F5EE;
+    --purple:#3C3489; --purple-lt:#EEEDFE;
+    --orange:#854F0B; --orange-lt:#FFF8F0;
+    --border:#E0DDD6; --bg:#F5F4F0; --white:#FFFFFF;
+    --text:#1A1A1A; --muted:#888888;
+    --script-bg:#EBF4FF; --script-text:#0C447C;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); font-size:13px; }
+
+  /* TOP BAR */
+  .topbar { background:var(--blue); color:white; padding:0 24px; height:52px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+  .topbar h1 { font-size:16px; font-weight:600; letter-spacing:0.02em; }
+  .topbar span { font-size:11px; opacity:0.7; }
+
+  /* SEARCH */
+  .search-bar { background:var(--white); border-bottom:1px solid var(--border); padding:12px 24px; position:sticky; top:52px; z-index:99; }
+  .search-wrap { position:relative; max-width:480px; }
+  .search-wrap input { width:100%; padding:9px 14px 9px 38px; font-size:14px; border:1.5px solid var(--border); border-radius:8px; outline:none; background:var(--bg); transition:border-color 0.15s; }
+  .search-wrap input:focus { border-color:var(--blue); background:var(--white); }
+  .search-wrap .icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:16px; pointer-events:none; }
+  .search-hint { font-size:11px; color:var(--muted); margin-top:6px; }
+
+  /* DROPDOWN */
+  .dropdown { position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--white); border:1px solid var(--border); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.12); max-height:320px; overflow-y:auto; z-index:200; }
+  .dropdown-item { padding:10px 14px; cursor:pointer; border-bottom:0.5px solid var(--border); }
+  .dropdown-item:last-child { border-bottom:none; }
+  .dropdown-item:hover { background:var(--blue-lt); }
+  .d-name { font-weight:500; }
+  .d-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+  .d-chips { display:flex; gap:4px; margin-top:3px; flex-wrap:wrap; }
+
+  /* LAYOUT */
+  .main { max-width:1200px; margin:0 auto; padding:20px 24px; display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media(max-width:900px){ .main { grid-template-columns:1fr; } }
+
+  /* CARDS */
+  .card { background:var(--white); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .card-header { padding:10px 14px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.07em; color:var(--white); background:var(--blue-mid); }
+  .card-header.dark { background:var(--blue); }
+
+  /* RESTAURANT NAME BANNER */
+  .rest-banner { padding:12px 14px; border-bottom:0.5px solid var(--border); }
+  .rest-banner .r-name { font-size:17px; font-weight:600; color:var(--text); margin-bottom:5px; }
+  .rest-banner .r-chips { display:flex; gap:6px; flex-wrap:wrap; }
+
+  /* INFO ROWS */
+  .info-row { display:grid; grid-template-columns:145px 1fr; border-bottom:0.5px solid var(--border); }
+  .info-row:last-child { border-bottom:none; }
+  .info-label { padding:8px 10px 8px 10px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--muted); background:#FAFAFA; display:flex; align-items:flex-start; padding-top:9px; }
+  .info-label.stat { color:var(--blue); background:var(--blue-lt); }
+  .info-val { padding:8px 10px; font-size:13px; color:var(--text); line-height:1.5; }
+  .info-val.empty { color:#CCC; font-style:italic; }
+  .mkt-subhdr { padding:8px 10px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--white); background:var(--blue-mid); grid-column:1/-1; }
+
+  /* CHIPS */
+  .chip { padding:2px 7px; border-radius:4px; font-size:10px; font-weight:600; display:inline-block; }
+  .chip-cuisine { background:var(--green-lt); color:var(--green); }
+  .chip-price   { background:var(--purple-lt); color:var(--purple); }
+  .chip-market  { background:var(--blue-lt); color:var(--blue); }
+  .chip-acc     { background:#FCEBEB; color:#A32D2D; }
+
+  /* NAMEDROPPER TABS */
+  .nd-tabs { display:flex; border-bottom:1px solid var(--border); }
+  .nd-tab { flex:1; padding:8px; text-align:center; font-size:11px; font-weight:600; cursor:pointer; color:var(--muted); border-bottom:2px solid transparent; transition:all 0.15s; }
+  .nd-tab.active-partner { color:var(--green); border-bottom-color:var(--green); background:var(--green-lt); }
+  .nd-tab.active-bilt    { color:var(--purple); border-bottom-color:var(--purple); background:var(--purple-lt); }
+  .nd-tab.active-dinova  { color:var(--blue); border-bottom-color:var(--blue); background:var(--blue-lt); }
+  .nd-items { padding:8px 0; }
+  .nd-item { display:flex; align-items:flex-start; gap:10px; padding:8px 12px; border-bottom:0.5px solid var(--border); }
+  .nd-item:last-child { border-bottom:none; }
+  .nd-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+  .dot-green  { background:#1D9E75; }
+  .dot-purple { background:#534AB7; }
+  .dot-blue   { background:var(--blue-mid); }
+  .nd-body { flex:1; min-width:0; }
+  .nd-name { font-size:13px; font-weight:500; color:var(--text); }
+  .nd-meta { display:flex; gap:8px; margin-top:3px; flex-wrap:wrap; align-items:center; }
+  .nd-badge { font-size:10px; font-weight:600; padding:1px 6px; border-radius:4px; }
+  .nd-badge-price  { background:var(--purple-lt); color:var(--purple); }
+  .nd-badge-dist   { background:#F0F0F0; color:#555; }
+  .nd-badge-gmv    { background:#E6F7EE; color:#0A5E36; }
+  .nd-badge-tag    { background:#FFF3E0; color:#E65100; }
+  .nd-empty { padding:14px 12px; color:var(--muted); font-style:italic; font-size:12px; text-align:center; }
+
+  /* MATCH SIGNALS */
+  .signals { display:flex; flex-wrap:wrap; gap:6px; padding:10px 12px; }
+  .sig { padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+  .sig-partner { background:var(--green-lt); color:var(--green); }
+  .sig-bilt    { background:var(--purple-lt); color:var(--purple); }
+  .sig-dinova  { background:var(--blue-lt); color:var(--blue); }
+  .sig-acc     { background:#FCEBEB; color:#A32D2D; }
+  .sig-none    { color:var(--muted); font-style:italic; font-size:12px; padding:10px 12px; }
+
+  /* RIGHT PANEL TABS */
+  .panel-tabs { display:flex; border-bottom:1px solid var(--border); background:var(--white); }
+  .panel-tab { padding:10px 16px; font-size:12px; font-weight:600; cursor:pointer; color:var(--muted); border-bottom:2px solid transparent; transition:all 0.15s; white-space:nowrap; }
+  .panel-tab.active { color:var(--blue); border-bottom-color:var(--blue); background:var(--blue-lt); }
+  .panel-content { display:none; }
+  .panel-content.active { display:block; }
+
+  /* SCRIPT */
+  .script-section { border-bottom:0.5px solid var(--border); }
+  .script-section:last-child { border-bottom:none; }
+  .script-label { padding:7px 12px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--blue); background:var(--script-bg); }
+  .script-label.opener-line { border-left:3px solid var(--blue-mid); }
+  .script-label.opener-cell { border-left:3px solid #7B9ED9; }
+  .script-text { padding:10px 12px; font-size:13px; color:var(--script-text); line-height:1.7; white-space:pre-line; }
+  .dir { color:#C0392B; font-style:italic; font-weight:normal; }
+  .script-notice { background:#FFF3F3; border:1px solid #FBBCBC; border-radius:6px; padding:7px 12px; font-size:11px; font-weight:700; color:#C0392B; letter-spacing:0.06em; margin:8px 8px 0; }
+  .disc-closing { background:#E8F0FB; border-left:3px solid var(--blue); padding:8px 12px; font-size:12px; color:var(--blue); font-weight:600; margin-top:4px; }
+  .disc-closing-body { padding:8px 12px; font-size:12px; color:#555; line-height:1.6; white-space:pre-line; }
+  .nd-tag        { display:inline; background:#B5D4F4; color:#0C447C; padding:1px 5px; border-radius:3px; font-weight:600; font-size:12px; }
+  .nd-tag-bilt   { background:#CECBF6; color:#26215C; }
+  .nd-tag-dinova { background:#9FE1CB; color:#085041; }
+
+  /* OBJECTIONS */
+  .obj-item { border-bottom:0.5px solid var(--border); }
+  .obj-item:last-child { border-bottom:none; }
+  .obj-q { padding:8px 12px; font-size:12px; font-weight:700; color:var(--orange); background:var(--orange-lt); }
+  .obj-a { padding:8px 12px; font-size:12px; color:#333; line-height:1.6; }
+
+  /* DISCOVERY */
+  .disc-item { border-bottom:0.5px solid var(--border); }
+  .disc-item:last-child { border-bottom:none; }
+  .disc-q { padding:8px 12px; font-size:12px; color:var(--blue); background:var(--script-bg); }
+  .disc-a { padding:8px 12px; font-size:12px; color:#555; line-height:1.6; }
+
+  /* EMPTY STATE */
+  .empty-state { grid-column:1/-1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:80px 40px; text-align:center; gap:12px; color:var(--muted); }
+  .empty-state .e-icon { font-size:40px; }
+  .empty-state h2 { font-size:18px; font-weight:500; color:#555; }
+  .empty-state p { font-size:13px; max-width:380px; line-height:1.6; }
+
+  .footer-note { grid-column:1/-1; text-align:center; font-size:11px; color:var(--muted); font-style:italic; padding:8px 0 20px; }
+  .dropdown::-webkit-scrollbar { width:6px; }
+  .dropdown::-webkit-scrollbar-thumb { background:#DDD; border-radius:3px; }
+
+  /* AUTH GATE */
+  #auth-gate { position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; z-index:1000; }
+  #auth-gate .auth-card { background:var(--white); border:1px solid var(--border); border-radius:12px; padding:32px; max-width:380px; width:calc(100% - 32px); text-align:center; box-shadow:0 8px 24px rgba(0,0,0,0.08); }
+  #auth-gate h1 { font-size:18px; font-weight:600; color:var(--blue); margin-bottom:6px; }
+  #auth-gate p { font-size:13px; color:var(--muted); margin-bottom:20px; line-height:1.5; }
+  #auth-gate .g-btn-wrap { display:flex; justify-content:center; min-height:44px; }
+  #auth-error { display:none; background:#FCEBEB; color:#A32D2D; border-radius:6px; padding:10px 14px; font-size:12px; margin-top:14px; text-align:left; line-height:1.5; }
+  #auth-loading { display:none; font-size:12px; color:var(--muted); margin-top:14px; }
+  .signout-btn { background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); border-radius:5px; font-size:11px; font-weight:600; padding:4px 10px; cursor:pointer; }
+  .signout-btn:hover { background:rgba(255,255,255,0.25); }
+  body.locked .topbar, body.locked .search-bar, body.locked .main { filter:blur(4px); pointer-events:none; user-select:none; }
+</style>
+</head>
+<body class="locked">
+
+<div id="auth-gate">
+  <div class="auth-card">
+    <h1>Seated · Cold Call Hub</h1>
+    <p>Sign in with your <strong>@seatedapp.io</strong> Google account to load the call sheets.</p>
+    <div class="g-btn-wrap"><div id="g-signin-btn"></div></div>
+    <div id="auth-loading">Loading prospects…</div>
+    <div id="auth-error"></div>
+  </div>
+</div>
+
+<div class="topbar">
+  <h1>SEATED &nbsp;·&nbsp; Cold Call Hub</h1>
+  <div style="display:flex; align-items:center; gap:14px;">
+    <span id="mkt-label"></span>
+    <span id="user-email" style="font-size:11px; opacity:0.85;"></span>
+    <button id="signout-btn" class="signout-btn" style="display:none;" onclick="signOut()">Sign out</button>
+  </div>
+</div>
+
+<div class="search-bar">
+  <div class="search-wrap" id="search-wrap">
+    <span class="icon">🔍</span>
+    <input type="text" id="search-input" placeholder="Search any restaurant..." autocomplete="off" />
+    <div class="dropdown" id="dropdown" style="display:none"></div>
+  </div>
+  <div class="search-hint" id="search-hint">Type a restaurant name to load the full call sheet</div>
+</div>
+
+<div class="main" id="main">
+  <div class="empty-state">
+    <div class="e-icon">📵</div>
+    <h2>Search a restaurant to get started</h2>
+    <p>Type any prospect name above. You'll get their info, match signals, namedroppers, and a full personalized script.</p>
+  </div>
+</div>
+
+<script>
+// ── OAuth + sheet config ──────────────────────────────────────
+// OAUTH_CLIENT_ID is not a secret. Reusing the visits app's client — this works
+// as long as the page is served from an origin registered on that client
+// (e.g. https://opassafiume-coder.github.io). Swap if this app lives elsewhere.
+var OAUTH_CLIENT_ID = '352874229289-tglifiln7raionffiran3a63p6verre0.apps.googleusercontent.com';
+var SHEET_ID        = '16XqBrMG5-WD0DsAssMWoK8NZ0t2EFbWAa0bLBJO3DY8';
+var REQUIRED_HD     = 'seatedapp.io';
+var SCOPES          = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+var PROSPECTS_RANGE = 'Prospects!A:P';
+
+var PROSPECTS = [];
+var SCRIPTS = {};
+var tokenClient = null, accessToken = null, userProfile = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+
+var current = null;
+var activeNDTab = 'partner';
+var activePanelTab = 'rl';
+
+var input = document.getElementById('search-input');
+var dd = document.getElementById('dropdown');
+
+var searchIndex = [];
+
+// ── Auth bootstrap ──────────────────────────────────────────────
+(function waitForGIS() {
+  if (window.google && google.accounts && google.accounts.id) { initAuth(); }
+  else { setTimeout(waitForGIS, 50); }
+})();
+
+function initAuth() {
+  google.accounts.id.initialize({
+    client_id: OAUTH_CLIENT_ID,
+    callback: onCredentialResponse,
+    hd: REQUIRED_HD,
+    auto_select: true,
+    use_fedcm_for_prompt: true
+  });
+  google.accounts.id.renderButton(document.getElementById('g-signin-btn'), {
+    theme: 'outline', size: 'large', text: 'signin_with', shape: 'rectangular'
+  });
+  google.accounts.id.prompt();
+
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: OAUTH_CLIENT_ID,
+    scope: SCOPES,
+    hd: REQUIRED_HD,
+    callback: function() {}
+  });
+}
+
+function onCredentialResponse(resp) {
+  var payload;
+  try {
+    payload = JSON.parse(atob(resp.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+  } catch (e) { return showAuthError('Could not decode sign-in token.'); }
+
+  if (payload.hd !== REQUIRED_HD) {
+    google.accounts.id.disableAutoSelect();
+    return showAuthError('This app is restricted to @' + REQUIRED_HD + ' accounts. You signed in as ' + payload.email + '.');
+  }
+  userProfile = { name: payload.name, email: payload.email };
+
+  tokenClient.callback = function(tokenResp) {
+    if (tokenResp.error || !tokenResp.access_token) {
+      return showAuthError('Could not get Sheets access: ' + (tokenResp.error || 'unknown'));
+    }
+    accessToken = tokenResp.access_token;
+    afterAuth().catch(function(e) { showAuthError('Failed to load prospects: ' + e.message); });
+  };
+  tokenClient.requestAccessToken({ prompt: '', hint: payload.email });
+}
+
+function afterAuth() {
+  document.getElementById('g-signin-btn').style.display = 'none';
+  document.getElementById('auth-error').style.display = 'none';
+  document.getElementById('auth-loading').style.display = 'block';
+  return Promise.all([loadProspectsFromSheet(), loadScriptsFromSheet()]).then(function() {
+    document.getElementById('user-email').textContent = userProfile.email;
+    document.getElementById('signout-btn').style.display = 'inline-block';
+    document.getElementById('auth-gate').style.display = 'none';
+    document.body.classList.remove('locked');
+    initApp();
+  });
+}
+
+function showAuthError(msg) {
+  document.getElementById('auth-loading').style.display = 'none';
+  document.getElementById('g-signin-btn').style.display = '';
+  var el = document.getElementById('auth-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function signOut() {
+  if (accessToken) google.accounts.oauth2.revoke(accessToken, function() {});
+  google.accounts.id.disableAutoSelect();
+  accessToken = null; userProfile = null;
+  location.reload();
+}
+
+function refreshAccessToken() {
+  return new Promise(function(resolve, reject) {
+    tokenClient.callback = function(tokenResp) {
+      if (tokenResp.access_token) resolve(tokenResp.access_token);
+      else reject(new Error('Token refresh failed'));
+    };
+    tokenClient.requestAccessToken({ prompt: '' });
+  });
+}
+
+function fetchSheetValues(range) {
+  var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEET_ID +
+            '/values/' + encodeURIComponent(range) + '?majorDimension=ROWS';
+  function doFetch() {
+    return fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } });
+  }
+  return doFetch().then(function(res) {
+    if (res.status === 401) {
+      return refreshAccessToken().then(function(tok) { accessToken = tok; return doFetch(); });
+    }
+    return res;
+  }).then(function(res) {
+    if (!res.ok) throw new Error('Sheets API ' + res.status);
+    return res.json();
+  }).then(function(data) { return data.values || []; });
+}
+
+function loadProspectsFromSheet() {
+  return fetchSheetValues(PROSPECTS_RANGE).then(function(values) {
+    if (!values.length) { PROSPECTS = []; return; }
+    var headers = values[0].map(function(h) { return String(h || '').trim(); });
+    var out = [];
+    for (var i = 1; i < values.length; i++) {
+      var row = values[i] || [];
+      var obj = {};
+      for (var c = 0; c < headers.length; c++) obj[headers[c]] = row[c] != null ? String(row[c]) : '';
+      if (!obj.name) continue;
+      out.push({
+        name: obj.name, address: obj.address, neighborhood: obj.neighborhood, zip: obj.zip,
+        cuisine: obj.cuisine, price: obj.price, accolades: obj.accolades, market: obj.market,
+        bilt_safe: obj.bilt_safe, mkt_year: obj.mkt_year, mkt_avg_rev: obj.mkt_avg_rev,
+        mkt_members: obj.mkt_members, mkt_volume: obj.mkt_volume,
+        partners: parseJsonCell(obj.partners_json),
+        bilt: parseJsonCell(obj.bilt_json),
+        dinova: parseJsonCell(obj.dinova_json)
+      });
+    }
+    PROSPECTS = out;
+  });
+}
+
+function parseJsonCell(s) {
+  if (!s) return [];
+  try { var v = JSON.parse(s); return Array.isArray(v) ? v : []; }
+  catch (e) { return []; }
+}
+
+function loadScriptsFromSheet() {
+  return fetchSheetValues('Scripts!A2:B').then(function(rows) {
+    SCRIPTS = {};
+    for (var i = 0; i < rows.length; i++) {
+      var k = rows[i][0];
+      if (k) SCRIPTS[String(k).trim()] = rows[i][1] != null ? String(rows[i][1]) : '';
+    }
+  });
+}
+
+// Fill {token} placeholders in a script template with values.
+function tpl(key, vars) {
+  var s = SCRIPTS[key] || '';
+  if (vars) for (var k in vars) {
+    if (vars.hasOwnProperty(k)) s = s.split('{' + k + '}').join(vars[k] == null ? '' : vars[k]);
+  }
+  return s;
+}
+
+function initApp() {
+  searchIndex.length = 0;
+  for (var i = 0; i < PROSPECTS.length; i++) {
+    searchIndex.push({ i: i, nl: PROSPECTS[i].name.toLowerCase() });
+  }
+}
+
+window.signOut = signOut;
+
+function showDropdown(q) {
+  var results = [];
+  if (q) {
+    for (var i = 0; i < searchIndex.length; i++) {
+      if (searchIndex[i].nl.indexOf(q) >= 0) {
+        results.push(searchIndex[i]);
+        if (results.length >= 12) break;
+      }
+    }
+  } else {
+    results = searchIndex.slice(0, 10);
+  }
+  if (!results.length) { dd.style.display = 'none'; return; }
+  var header = q ? '' : '<div style="padding:8px 14px 4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#aaa">Suggestions</div>';
+  var html = header;
+  for (var j = 0; j < results.length; j++) {
+    var p = PROSPECTS[results[j].i];
+    html += '<div class="dropdown-item" onclick="selectProspect(' + results[j].i + ')">';
+    html += '<div class="d-name">' + p.name + '</div>';
+    html += '<div class="d-meta">' + (p.address || '') + (p.neighborhood ? ' · ' + p.neighborhood : '') + '</div>';
+    html += '<div class="d-chips">';
+    if (p.cuisine) html += '<span class="chip chip-cuisine">' + p.cuisine + '</span>';
+    if (p.price)   html += '<span class="chip chip-price">' + p.price + '</span>';
+    if (p.market)  html += '<span class="chip chip-market">' + p.market + '</span>';
+    html += '</div></div>';
+  }
+  dd.innerHTML = html;
+  dd.style.display = 'block';
+}
+
+input.addEventListener('focus', function() { showDropdown(input.value.trim().toLowerCase()); });
+input.addEventListener('input', function() { showDropdown(input.value.trim().toLowerCase()); });
+document.addEventListener('click', function(e) {
+  if (!document.getElementById('search-wrap').contains(e.target)) dd.style.display = 'none';
+});
+
+function selectProspect(idx) {
+  current = PROSPECTS[idx];
+  activeNDTab = 'partner';
+  activePanelTab = 'rl';
+  dd.style.display = 'none';
+  input.value = current.name;
+  document.getElementById('mkt-label').textContent = current.market || '';
+  render();
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function pName(field) {
+  if (!field) return '';
+  var idx = field.indexOf(' ·');
+  return idx > 0 ? field.substring(0, idx) : field;
+}
+
+function infoRow(label, val, isStat) {
+  return '<div class="info-row">'
+    + '<div class="info-label' + (isStat ? ' stat' : '') + '">' + label + '</div>'
+    + '<div class="info-val' + (val ? '' : ' empty') + '">' + (val || '—') + '</div>'
+    + '</div>';
+}
+
+function scriptRow(label, text, extraClass, partners, bilts, dinovas) {
+  extraClass = extraClass || '';
+  partners = partners || [];
+  bilts = bilts || [];
+  dinovas = dinovas || [];
+  var html = text.replace(/\n/g, '<br>');
+  for (var i = 0; i < partners.length; i++) {
+    if (partners[i]) html = html.split(partners[i]).join('<span class="nd-tag">' + partners[i] + '</span>');
+  }
+  for (var i = 0; i < bilts.length; i++) {
+    if (bilts[i]) html = html.split(bilts[i]).join('<span class="nd-tag nd-tag-bilt">' + bilts[i] + '</span>');
+  }
+  for (var i = 0; i < dinovas.length; i++) {
+    if (dinovas[i]) html = html.split(dinovas[i]).join('<span class="nd-tag nd-tag-dinova">' + dinovas[i] + '</span>');
+  }
+  return '<div class="script-section">'
+    + '<div class="script-label ' + extraClass + '">' + label + '</div>'
+    + '<div class="script-text">' + html + '</div>'
+    + '</div>';
+}
+
+function objRow(q, a) {
+  return '<div class="obj-item">'
+    + '<div class="obj-q">' + q + '</div>'
+    + '<div class="obj-a">' + a + '</div>'
+    + '</div>';
+}
+
+function discRow(boldQ, tipA) {
+  return '<div class="disc-item">'
+    + '<div class="disc-q">' + boldQ + '</div>'
+    + '<div class="disc-a">' + tipA + '</div>'
+    + '</div>';
+}
+
+function ndItem(dotClass, name, price, dist, gmv, tag) {
+  var html = '<div class="nd-item"><div class="nd-dot ' + dotClass + '"></div><div class="nd-body">';
+  html += '<div class="nd-name">' + name + '</div>';
+  html += '<div class="nd-meta">';
+  if (price) html += '<span class="nd-badge nd-badge-price">' + price + '</span>';
+  if (dist)  html += '<span class="nd-badge nd-badge-dist">' + dist + '</span>';
+  if (gmv)   html += '<span class="nd-badge nd-badge-gmv">' + gmv + '</span>';
+  if (tag)   html += '<span class="nd-badge nd-badge-tag">' + tag + '</span>';
+  html += '</div></div></div>';
+  return html;
+}
+
+function renderNDTab(p) {
+  var html = '';
+  if (activeNDTab === 'partner') {
+    var items = p.partners.filter(function(x) { return x && x.name; });
+    if (!items.length) return '<div class="nd-empty">No nearby partners found</div>';
+    for (var i = 0; i < items.length; i++) {
+      html += ndItem('dot-green', items[i].name, items[i].price, items[i].dist, items[i].gmv, items[i].tag);
+    }
+  } else if (activeNDTab === 'bilt') {
+    var items = p.bilt.filter(function(x) { return x && x.name; });
+    if (!items.length) return '<div class="nd-empty">No BILT buildings mapped for this market</div>';
+    for (var i = 0; i < items.length; i++) {
+      html += ndItem('dot-purple', items[i].name, '', '', '', '');
+    }
+  } else if (activeNDTab === 'dinova') {
+    var items = p.dinova.filter(function(x) { return x && x.name; });
+    if (!items.length) return '<div class="nd-empty">No Dinova companies for this market</div>';
+    for (var i = 0; i < items.length; i++) {
+      html += ndItem('dot-blue', items[i].name, '', '', '', '');
+    }
+  }
+  return html;
+}
+
+function render() {
+  var p = current;
+  if (!p) return;
+
+  var p1 = p.partners[0] || {}, p2 = p.partners[1] || {};
+  var p1n = p1.name || '', p2n = p2.name || '';
+  var b1 = p.bilt[0] || {}, b2 = p.bilt[1] || {}, b3 = p.bilt[2] || {};
+  var d1 = p.dinova[0] || {}, d2 = p.dinova[1] || {}, d3 = p.dinova[2] || {};
+  var d1n = d1.name || '', d2n = d2.name || '', d3n = d3.name || '';
+
+  var nbhd = p.neighborhood || 'your neighborhood';
+  var accolPhrase = p.accolades ? tpl('accol_featured', { accolades: p.accolades }) : (SCRIPTS.accol_default || '');
+  var biltSafe = p.bilt_safe || '';
+
+  var biltNames = [b1.name, b2.name, b3.name].filter(Boolean);
+  var dinovaNames = [d1n, d2n, d3n].filter(Boolean);
+  var dinPhrase = dinovaNames.length === 0 ? (SCRIPTS.din_phrase_none || '')
+    : dinovaNames.length === 1 ? dinovaNames[0]
+    : dinovaNames.length === 2 ? dinovaNames[0] + ' and ' + dinovaNames[1]
+    : dinovaNames[0] + ', ' + dinovaNames[1] + ', and ' + dinovaNames[2];
+
+  var scriptNotice = '<div class="script-notice">⚑ RED TEXT = DIRECTIONS — DO NOT READ ALOUD</div>';
+
+  // Shared script blocks (templates loaded from the sheet's Scripts tab)
+  var isNYC = (p.market || '').toLowerCase().indexOf('new york') >= 0;
+  var rest_clause = isNYC ? (SCRIPTS.quantify_rest_nyc || '') : (SCRIPTS.quantify_rest_default || '');
+  var quantify = tpl('quantify', { rest_clause: rest_clause });
+  var localize = tpl('localize', {
+    nbhd: nbhd,
+    p1or: p1n || (SCRIPTS.partner_fallback_1 || ''),
+    p2or: p2n || (SCRIPTS.partner_fallback_2 || ''),
+    p1n: p1n
+  });
+  var personalize = tpl('personalize', { name: p.name, accolPhrase: accolPhrase, biltSafe: biltSafe, dinPhrase: dinPhrase });
+  var sharedClose = SCRIPTS.shared_close || '';
+  var rl_lock = SCRIPTS.rl_lock || '';
+  var dm_lock = SCRIPTS.dm_lock || '';
+
+  // RESTAURANT LINE
+  var rl_opener = tpl('rl_opener', { name: p.name });
+  var rl_gatekeeper = SCRIPTS.rl_gatekeeper || '';
+  var rl_qualify = tpl('rl_qualify', { name: p.name });
+
+  var rlContent = scriptNotice
+    + scriptRow('OPENER', rl_opener, 'opener-line')
+    + scriptRow('GATEKEEPER', rl_gatekeeper, 'opener-line')
+    + scriptRow('QUALIFY DM', rl_qualify, 'opener-line')
+    + scriptRow('QUANTIFY', quantify)
+    + scriptRow('LOCALIZE', localize, '', [p1n, p2n])
+    + scriptRow('PERSONALIZE', personalize, '', [], biltNames, dinovaNames)
+    + scriptRow('CLOSE', sharedClose)
+    + scriptRow('LOCK', rl_lock);
+
+  // DM CELL
+  var dm_opener = tpl('dm_opener', { name: p.name, accolPhrase: accolPhrase });
+  var dm_quantify = '<span class="dir">[Not Familiar]</span>\n' + quantify
+    + '\n\n<span class="dir">[Familiar]</span>\n' + (SCRIPTS.dm_quantify_familiar || '');
+
+  var dmContent = scriptNotice
+    + scriptRow('OPENER', dm_opener, 'opener-cell')
+    + scriptRow('QUANTIFY', dm_quantify)
+    + scriptRow('LOCALIZE', localize, '', [p1n, p2n])
+    + scriptRow('PERSONALIZE', personalize, '', [], biltNames, dinovaNames)
+    + scriptRow('CLOSE', sharedClose)
+    + scriptRow('LOCK', dm_lock);
+
+  // DISCOVERY
+  var discContent = ''
+    + discRow('<b>' + (SCRIPTS.disc1_q || '') + '</b>', SCRIPTS.disc1_a || '')
+    + discRow('<b>' + (SCRIPTS.disc2_q || '') + '</b>', SCRIPTS.disc2_a || '')
+    + discRow('<b>' + (SCRIPTS.disc3_q || '') + '</b>', SCRIPTS.disc3_a || '')
+    + discRow('<b>' + (SCRIPTS.disc4_q || '') + '</b>', SCRIPTS.disc4_a || '')
+    + discRow('<b>' + (SCRIPTS.disc5_q || '') + '</b>', SCRIPTS.disc5_a || '')
+    + '<div class="disc-closing">' + (SCRIPTS.disc_closing_title || '') + '</div>'
+    + '<div class="disc-closing-body">' + (SCRIPTS.disc_closing_body || '') + '</div>';
+
+  // OBJECTIONS
+  var objContent = ''
+    + objRow('"' + (SCRIPTS.obj1_q || '') + '"', SCRIPTS.obj1_a || '')
+    + objRow('"' + (SCRIPTS.obj2_q || '') + '"', SCRIPTS.obj2_a || '')
+    + objRow('"' + (SCRIPTS.obj3_q || '') + '"', tpl('obj3_a', { p1or2: p1n || (SCRIPTS.partner_fallback_objection || '') }))
+    + objRow('"' + (SCRIPTS.obj4_q || '') + '"', SCRIPTS.obj4_a || '')
+    + objRow('"' + (SCRIPTS.obj5_q || '') + '"', SCRIPTS.obj5_a || '')
+    + objRow('"' + (SCRIPTS.obj6_q || '') + '"', SCRIPTS.obj6_a || '')
+    + objRow('"' + (SCRIPTS.obj7_q || '') + '"', tpl('obj7_a', { biltSafe: biltSafe }));
+
+  // BUILD LEFT COLUMN
+  var ndCount = [p.partners.filter(function(x){return x&&x.name;}).length,
+                 p.bilt.filter(function(x){return x&&x.name;}).length,
+                 p.dinova.filter(function(x){return x&&x.name;}).length];
+
+  var leftCol = ''
+    + '<div class="card">'
+    + '<div class="card-header">Restaurant Info</div>'
+    + '<div class="rest-banner"><div class="r-name">' + p.name + '</div>'
+    + '<div class="r-chips">'
+    + (p.cuisine ? '<span class="chip chip-cuisine">' + p.cuisine + '</span>' : '')
+    + (p.price   ? '<span class="chip chip-price">' + p.price + '</span>' : '')
+    + (p.market  ? '<span class="chip chip-market">' + p.market + '</span>' : '')
+    + (p.accolades ? '<span class="chip chip-acc">⭐ ' + p.accolades + '</span>' : '')
+    + '</div></div>'
+    + infoRow('Phone', p.phone || '')
+    + infoRow('Address', p.address)
+    + infoRow('Neighborhood', p.neighborhood)
+    + infoRow('Zip', p.zip)
+    + '<div class="mkt-subhdr">Market Info</div>'
+    + infoRow('Market Since', p.mkt_year, true)
+    + infoRow('Avg Rev / Restaurant', p.mkt_avg_rev, true)
+    + infoRow('Member Count', p.mkt_members, true)
+    + infoRow('Monthly Volume', p.mkt_volume, true)
+    + '</div>'
+
+    + '<div class="card" style="margin-top:12px">'
+    + '<div class="card-header">Match Signals</div>'
+    + '<div class="signals">'
+    + (p1n ? '<span class="sig sig-partner">✓ Partners nearby</span>' : '')
+    + (b1.name ? '<span class="sig sig-bilt">✓ BILT buildings</span>' : '')
+    + (d1n ? '<span class="sig sig-dinova">✓ Dinova corporates</span>' : '')
+    + (p.accolades ? '<span class="sig sig-acc">✓ ' + p.accolades + '</span>' : '')
+    + (!p1n && !b1.name && !d1n && !p.accolades ? '<span class="sig-none">No signals found</span>' : '')
+    + '</div></div>'
+
+    + '<div class="card" style="margin-top:12px">'
+    + '<div class="card-header">Namedroppers</div>'
+    + '<div class="nd-tabs">'
+    + '<div class="nd-tab ' + (activeNDTab==='partner'?'active-partner':'') + '" onclick="setNDTab(\'partner\')">Partners (' + ndCount[0] + ')</div>'
+    + '<div class="nd-tab ' + (activeNDTab==='bilt'?'active-bilt':'') + '" onclick="setNDTab(\'bilt\')">BILT (' + ndCount[1] + ')</div>'
+    + '<div class="nd-tab ' + (activeNDTab==='dinova'?'active-dinova':'') + '" onclick="setNDTab(\'dinova\')">Dinova (' + ndCount[2] + ')</div>'
+    + '</div>'
+    + '<div class="nd-items" id="nd-items">' + renderNDTab(p) + '</div>'
+    + '</div>';
+
+  // BUILD RIGHT COLUMN
+  var rightCol = '<div class="card">'
+    + '<div class="panel-tabs" style="flex-wrap:wrap">'
+    + '<div class="panel-tab ' + (activePanelTab==='rl'?'active':'') + '" onclick="setPanelTab(\'rl\')">📞 Restaurant Line</div>'
+    + '<div class="panel-tab ' + (activePanelTab==='dm'?'active':'') + '" onclick="setPanelTab(\'dm\')">📱 DM Cell</div>'
+    + '<div class="panel-tab ' + (activePanelTab==='discovery'?'active':'') + '" onclick="setPanelTab(\'discovery\')">🔍 Discovery</div>'
+    + '<div class="panel-tab ' + (activePanelTab==='objections'?'active':'') + '" onclick="setPanelTab(\'objections\')">🛡 Objections</div>'
+    + '</div>'
+    + '<div class="panel-content ' + (activePanelTab==='rl'?'active':'') + '" id="panel-rl">' + rlContent + '</div>'
+    + '<div class="panel-content ' + (activePanelTab==='dm'?'active':'') + '" id="panel-dm">' + dmContent + '</div>'
+    + '<div class="panel-content ' + (activePanelTab==='discovery'?'active':'') + '" id="panel-discovery">' + discContent + '</div>'
+    + '<div class="panel-content ' + (activePanelTab==='objections'?'active':'') + '" id="panel-objections">' + objContent + '</div>'
+    + '</div>';
+
+  document.getElementById('main').innerHTML = ''
+    + '<div>' + leftCol + '</div>'
+    + '<div>' + rightCol + '</div>'
+    + '<div class="footer-note">' + (SCRIPTS.footer_note || '') + '</div>';
+
+  document.getElementById('search-hint').textContent = 'Showing: ' + p.name + (p.market ? ' · ' + p.market : '');
+}
+
+function setNDTab(tab) {
+  activeNDTab = tab;
+  var el = document.getElementById('nd-items');
+  if (el && current) el.innerHTML = renderNDTab(current);
+  var tabs = document.querySelectorAll('.nd-tab');
+  var tabNames = ['partner','bilt','dinova'];
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].className = 'nd-tab' + (tab === tabNames[i] ? ' active-' + tabNames[i] : '');
+  }
+}
+
+function setPanelTab(tab) {
+  activePanelTab = tab;
+  var tabs = document.querySelectorAll('.panel-tab');
+  var panels = document.querySelectorAll('.panel-content');
+  var panelTabs = ['rl','dm','discovery','objections'];
+  for (var i = 0; i < tabs.length; i++) {
+    if (panelTabs[i] === tab) { tabs[i].classList.add('active'); }
+    else { tabs[i].classList.remove('active'); }
+  }
+  for (var i = 0; i < panels.length; i++) {
+    panels[i].classList.remove('active');
+  }
+  var panel = document.getElementById('panel-' + tab);
+  if (panel) panel.classList.add('active');
+}
+
+window.selectProspect = selectProspect;
+window.setNDTab = setNDTab;
+window.setPanelTab = setPanelTab;
+
+}); // end DOMContentLoaded
+</script>
+</body>
+</html>
